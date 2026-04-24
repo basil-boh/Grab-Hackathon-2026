@@ -59,6 +59,7 @@ function resolveApiRoute(pathname: string) {
     "/api/reviews": "/api/reviews.ts",
     "/api/voice/tts": "/api/voice/tts.ts",
     "/api/chat": "/api/chat.ts",
+    "/api/personality/duel": "/api/personality/duel.ts",
   };
 
   if (routes[pathname]) {

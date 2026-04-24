@@ -24,11 +24,16 @@ function isErrorPayload(payload: unknown): payload is ErrorPayload {
   return typeof payload === "object" && payload !== null && "error" in payload;
 }
 
-export async function searchPois(keyword: string, signal?: AbortSignal): Promise<Poi[]> {
+export async function searchPois(
+  keyword: string,
+  signal?: AbortSignal,
+  options?: { location?: LocationLike; limit?: number },
+): Promise<Poi[]> {
+  const location = options?.location ?? SG_CENTER;
   const params = new URLSearchParams({
     keyword,
-    location: `${SG_CENTER.lat},${SG_CENTER.lng}`,
-    limit: "10",
+    location: formatLocation(location),
+    limit: String(options?.limit ?? 10),
   });
 
   const response = await fetch(`/api/poi/search?${params}`, { signal });
@@ -36,15 +41,25 @@ export async function searchPois(keyword: string, signal?: AbortSignal): Promise
   return payload.items;
 }
 
-export async function nearbyPois(): Promise<Poi[]> {
+export async function nearbyPois(options?: { location?: LocationLike; radiusKm?: number; limit?: number }): Promise<Poi[]> {
+  const location = options?.location ?? SG_CENTER;
   const params = new URLSearchParams({
-    location: `${SG_CENTER.lat},${SG_CENTER.lng}`,
-    radius: "2",
-    limit: "12",
+    location: formatLocation(location),
+    radius: String(options?.radiusKm ?? 2),
+    limit: String(options?.limit ?? 12),
     rankBy: "distance",
   });
 
   const response = await fetch(`/api/poi/nearby?${params}`);
   const payload = await readJson<{ items: Poi[] }>(response);
   return payload.items;
+}
+
+type LocationLike = {
+  lat: number;
+  lng: number;
+};
+
+function formatLocation(location: LocationLike) {
+  return `${location.lat},${location.lng}`;
 }
