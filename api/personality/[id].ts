@@ -1,7 +1,7 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { personalityCache, type Personality } from "../../lib/cache";
 import { fetchGoogleReviews } from "../../lib/googlePlacesClient";
-import { fetchGrabPlaceDetails } from "../../lib/grabClient";
+import { fetchGrabPlaceDetails, type NormalizedPlace } from "../../lib/grabClient";
 import { generatePersonality } from "../../lib/openaiClient";
 import { pickVoice } from "../../lib/pickVoice";
 
@@ -24,9 +24,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const publicPayload: Personality = {
       archetype: cached.archetype,
       displayName: cached.displayName,
-      monologue: cached.monologue,
+      intro: cached.intro,
       imageUrl: cached.imageUrl,
       voiceId: cached.voiceId,
+      reviews: cached.reviews,
     };
     res.status(200).json(publicPayload);
     return;
@@ -42,22 +43,27 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    const [place, reviews] = await Promise.all([
+    const fallback: NormalizedPlace = { id: placeId, name, lat, lng };
+    const [placeResult, reviewsResult] = await Promise.allSettled([
       fetchGrabPlaceDetails(placeId),
-      fetchGoogleReviews({ id: placeId, name, lat, lng }),
+      fetchGoogleReviews(fallback),
     ]);
+
+    const place = placeResult.status === "fulfilled" ? placeResult.value : fallback;
+    const reviews = reviewsResult.status === "fulfilled" ? reviewsResult.value : [];
+
     const generated = await generatePersonality(place, reviews);
     const voiceId = pickVoice(generated.archetype);
     const personality: Personality = {
       ...generated,
       imageUrl: `/assets/images/${generated.archetype}.webp`,
       voiceId,
+      reviews,
     };
 
     personalityCache.set(placeId, {
       ...personality,
       place,
-      reviews,
     });
 
     res.status(200).json(personality);

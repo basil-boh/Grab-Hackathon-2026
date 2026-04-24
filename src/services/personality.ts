@@ -1,19 +1,32 @@
+export type Archetype =
+  | "italian-chef-happy"
+  | "italian-chef-angry"
+  | "japanese-chef-happy"
+  | "japanese-calm"
+  | "sushi-shop-owner"
+  | "korean-chef"
+  | "indian-abang"
+  | "chinese-worker"
+  | "mall-guard"
+  | "angry-sergeant"
+  | "stern-teacher"
+  | "airport-staff"
+  | "hotel-concierge"
+  | "local-neutral";
+
+export type PersonalityReview = {
+  text: string;
+  rating?: number;
+  author?: string;
+};
+
 export type Personality = {
-  archetype:
-    | "italian-chef-happy"
-    | "italian-chef-angry"
-    | "japanese-chef-happy"
-    | "japanese-chef-angry"
-    | "mall-guard"
-    | "angry-sergeant"
-    | "stern-teacher"
-    | "airport-staff"
-    | "hotel-concierge"
-    | "local-neutral";
+  archetype: Archetype;
   displayName: string;
-  monologue: string;
+  intro: string;
   imageUrl: string;
   voiceId: string;
+  reviews: PersonalityReview[];
 };
 
 type ErrorPayload = { error: string };

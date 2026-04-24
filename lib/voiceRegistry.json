@@ -1,12 +1,16 @@
 {
-  "italian-chef-happy": ["EXAVITQu4vr4xnSDxMaL"],
-  "italian-chef-angry": ["onwK4e9ZLuTAKqWW03F9"],
-  "japanese-chef-happy": ["MF3mGyEYCl7XYWbV9V6O"],
-  "japanese-chef-angry": ["TxGEqnHWrfWFTfGW9XjX"],
-  "mall-guard": ["yoZ06aMxZJJ28mfd3POQ"],
-  "angry-sergeant": ["VR6AewLTigWG4xSOukaG"],
-  "stern-teacher": ["pNInz6obpgDQGcFmaJgB"],
-  "airport-staff": ["21m00Tcm4TlvDq8ikWAM"],
-  "hotel-concierge": ["AZnzlk1XvdvUeBnXmlld"],
-  "local-neutral": ["ErXwobaYiN019PkySvjV"]
+  "italian-chef-happy": ["JBFqnCBsd6RMkjVDRZzb"],
+  "italian-chef-angry": ["pNInz6obpgDQGcFmaJgB"],
+  "japanese-chef-happy": ["iP95p4xoKVk53GoZ742B"],
+  "japanese-calm": ["nPczCjzI2devNBz1zQrb"],
+  "sushi-shop-owner": ["pqHfZKP75CvOlQylNhV4"],
+  "korean-chef": ["TX3LPaxmHKxFdv7VOQHJ"],
+  "indian-abang": ["CwhRBWXzGAHq8TQ4Fs17"],
+  "chinese-worker": ["bIHbv24MWmeRgasZH58o"],
+  "mall-guard": ["onwK4e9ZLuTAKqWW03F9"],
+  "angry-sergeant": ["SOYHLrjzK2X1ezoPC6cr"],
+  "stern-teacher": ["Xb7hH8MSUJpSbSDYk0k2"],
+  "airport-staff": ["hpp4J3VqNfWAUOO0d1Us"],
+  "hotel-concierge": ["cjVigY5qzO86Huf0OWal"],
+  "local-neutral": ["SAz9YHcvj6GT2YYXdXww", "cgSgspJ2msm6clMCkdW9"]
 }

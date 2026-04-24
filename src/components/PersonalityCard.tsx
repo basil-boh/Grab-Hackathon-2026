@@ -1,6 +1,8 @@
-import { AlertTriangle, MapPinned, Play, Sparkles } from "lucide-react";
+import { useEffect, useRef } from "react";
+import { AlertTriangle, MapPinned, Play, Sparkles, Star, Volume2 } from "lucide-react";
 import { useChat } from "../hooks/useChat";
 import { useTts } from "../hooks/useTts";
+import { ratingToSentiment, sentimentColorClasses } from "../lib/sentiment";
 import type { Personality } from "../services/personality";
 import type { Poi } from "../services/poi";
 import { ChatThread } from "./ChatThread";
@@ -17,6 +19,17 @@ type Props = {
 export function PersonalityCard({ poi, personality, isLoading, error, onDirections, routeLoading }: Props) {
   const { play, isSpeaking, error: voiceError } = useTts();
   const { messages, send, isSending, error: chatError } = useChat(poi?.id);
+  const autoplayedFor = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (!personality || !poi) return;
+    if (autoplayedFor.current === poi.id) return;
+    autoplayedFor.current = poi.id;
+
+    play(personality.intro, { voiceId: personality.voiceId }).catch(() => {
+      // Browser blocked autoplay; user can still tap Play manually.
+    });
+  }, [personality, poi, play]);
 
   if (!poi) {
     return (
@@ -43,7 +56,7 @@ export function PersonalityCard({ poi, personality, isLoading, error, onDirectio
       </div>
 
       {isLoading ? (
-        <div className="flex flex-1 flex-col gap-5 px-6 py-6">
+        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-6 py-6">
           <div className="h-64 animate-pulse rounded-lg bg-slate-200" />
           <div className="h-5 w-2/3 animate-pulse rounded bg-slate-200" />
           <div className="space-y-3">
@@ -61,7 +74,7 @@ export function PersonalityCard({ poi, personality, isLoading, error, onDirectio
           <p className="text-sm leading-6">{error}</p>
         </div>
       ) : personality ? (
-        <div className="flex min-h-0 flex-1 flex-col px-6 py-5">
+        <div className="flex min-h-0 flex-1 flex-col overflow-y-auto px-6 py-5">
           <img
             src={personality.imageUrl}
             alt={personality.displayName}
@@ -75,11 +88,11 @@ export function PersonalityCard({ poi, personality, isLoading, error, onDirectio
             <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => play(personality.monologue, personality.voiceId)}
+                onClick={() => play(personality.intro, { voiceId: personality.voiceId })}
                 disabled={isSpeaking}
                 className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-700 text-white transition hover:bg-teal-800 disabled:cursor-wait disabled:bg-slate-300"
-                aria-label="Play voice"
-                title="Play voice"
+                aria-label="Replay intro"
+                title="Replay intro"
               >
                 <Play className="h-4 w-4" />
               </button>
@@ -96,9 +109,49 @@ export function PersonalityCard({ poi, personality, isLoading, error, onDirectio
             </div>
           </div>
 
-          <p className="mt-4 text-sm leading-6 text-slate-700">{personality.monologue}</p>
+          <p className="mt-4 text-sm leading-6 text-slate-700">{personality.intro}</p>
           {voiceError ? (
             <div className="mt-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{voiceError}</div>
+          ) : null}
+
+          {personality.reviews?.length ? (
+            <section className="mt-5 border-t border-slate-200 pt-4">
+              <h3 className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
+                Reviews · tap to hear the reviewer's tone
+              </h3>
+              <ul className="mt-3 space-y-3">
+                {personality.reviews.map((review, index) => {
+                  const sentiment = ratingToSentiment(review.rating);
+                  const classes = sentimentColorClasses(sentiment);
+                  return (
+                    <li key={index} className={`rounded-lg border px-3 py-2 ${classes}`}>
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="text-sm font-medium">{review.author ?? "A visitor"}</span>
+                        <div className="flex items-center gap-2">
+                          {typeof review.rating === "number" ? (
+                            <span className="flex items-center gap-1 text-xs">
+                              <Star className="h-3 w-3 fill-current" />
+                              {review.rating.toFixed(1)}
+                            </span>
+                          ) : null}
+                          <button
+                            type="button"
+                            onClick={() => play(review.text, { sentiment })}
+                            disabled={isSpeaking}
+                            className="flex h-7 w-7 items-center justify-center rounded-md bg-white/80 text-slate-900 shadow-sm transition hover:bg-white disabled:cursor-wait disabled:bg-slate-200"
+                            aria-label={`Play ${sentiment} review`}
+                            title={`Play review in ${sentiment} voice`}
+                          >
+                            <Volume2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      </div>
+                      <p className="mt-1 text-sm leading-5">{review.text}</p>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
           ) : null}
 
           <ChatThread messages={messages} onSend={send} isSending={isSending} error={chatError} disabled={!personality} />

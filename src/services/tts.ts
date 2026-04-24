@@ -1,10 +1,18 @@
+import type { Sentiment } from "../lib/sentiment";
+
 type ErrorPayload = { error: string };
 
-export async function synthesizeSpeech(text: string, voiceId: string): Promise<Blob> {
+export type SpeakOptions = { voiceId: string } | { sentiment: Sentiment };
+
+export async function synthesizeSpeech(text: string, opts: SpeakOptions): Promise<Blob> {
+  const body: Record<string, string> = { text };
+  if ("sentiment" in opts) body.sentiment = opts.sentiment;
+  else body.voiceId = opts.voiceId;
+
   const response = await fetch("/api/voice/tts", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ text, voiceId }),
+    body: JSON.stringify(body),
   });
 
   const contentType = response.headers.get("content-type") ?? "";
