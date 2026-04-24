@@ -2,7 +2,17 @@ import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import maplibregl, { type Map as MapLibreMap, type Marker } from "maplibre-gl";
 import { Building2, Coffee, Dumbbell, LocateFixed, MapPin, Search, ShoppingBag, Swords, Trophy, Utensils, X } from "lucide-react";
 import { DEFAULT_ZOOM, SG_CENTER } from "../lib/config";
-import { searchPois, type Poi } from "../services/poi";
+import {
+  COFFEE_SEARCH_KEYWORDS,
+  FOOD_SEARCH_KEYWORDS,
+  GYM_SEARCH_KEYWORDS,
+  HOTEL_SEARCH_KEYWORDS,
+  MALL_SEARCH_KEYWORDS,
+  SPORTS_SEARCH_KEYWORDS,
+  searchPois,
+  searchPoisByKeywords,
+  type Poi,
+} from "../services/poi";
 import type { LocationPoint, RouteData } from "../services/route";
 
 type Props = {
@@ -42,12 +52,12 @@ const MAX_DUEL_DISTANCE_METERS = 500;
 const DISCOVERY_RADIUS_KM = 2;
 const DISCOVERY_RADIUS_METERS = DISCOVERY_RADIUS_KM * 1000;
 const PLACE_CATEGORY_OPTIONS = [
-  { label: "Food", keyword: "restaurant food", icon: Utensils },
-  { label: "Coffee", keyword: "coffee cafe", icon: Coffee },
-  { label: "Gyms", keyword: "gym fitness", icon: Dumbbell },
-  { label: "Sports", keyword: "sports hall facilities", icon: Trophy },
-  { label: "Malls", keyword: "shopping mall", icon: ShoppingBag },
-  { label: "Hotels", keyword: "hotel", icon: Building2 },
+  { label: "Food", keyword: FOOD_SEARCH_KEYWORDS, icon: Utensils },
+  { label: "Coffee", keyword: COFFEE_SEARCH_KEYWORDS, icon: Coffee },
+  { label: "Gyms", keyword: GYM_SEARCH_KEYWORDS, icon: Dumbbell },
+  { label: "Sports", keyword: SPORTS_SEARCH_KEYWORDS, icon: Trophy },
+  { label: "Malls", keyword: MALL_SEARCH_KEYWORDS, icon: ShoppingBag },
+  { label: "Hotels", keyword: HOTEL_SEARCH_KEYWORDS, icon: Building2 },
 ] as const;
 
 export function GrabMap({
@@ -390,13 +400,16 @@ export function GrabMap({
     await runPlaceSearch(keyword, null, undefined);
   }
 
-  async function runPlaceSearch(keyword: string, categoryLabel: string | null, center: DiscoveryAnchor | undefined) {
+  async function runPlaceSearch(keyword: string | readonly string[], categoryLabel: string | null, center: DiscoveryAnchor | undefined) {
     setIsSearching(true);
     setSearchError(null);
     setActiveCategory(categoryLabel);
 
     try {
-      const rawItems = await searchPois(keyword, undefined, center ? { location: center, limit: 30 } : undefined);
+      const searchOptions = center ? { location: center, limit: 20 } : undefined;
+      const rawItems = isKeywordList(keyword)
+        ? await searchPoisByKeywords(keyword, undefined, searchOptions)
+        : await searchPois(keyword, undefined, searchOptions);
       const items =
         categoryLabel && center
           ? rawItems
@@ -939,6 +952,10 @@ function getRadiusBounds(center: LocationPoint, radiusMeters: number): [[number,
     [center.lng - lngDelta, center.lat - latDelta],
     [center.lng + lngDelta, center.lat + latDelta],
   ];
+}
+
+function isKeywordList(keyword: string | readonly string[]): keyword is readonly string[] {
+  return typeof keyword !== "string";
 }
 
 function circleFeature(center: LocationPoint, radiusMeters: number): GeoJSON.Feature<GeoJSON.Polygon> {

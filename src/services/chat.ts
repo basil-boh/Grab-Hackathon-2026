@@ -5,11 +5,15 @@ export type ChatMessage = {
 
 type ErrorPayload = { error: string };
 
-export async function sendChatMessage(placeId: string, message: string): Promise<string> {
+export async function sendChatMessage(
+  placeId: string,
+  message: string,
+  options: { roast?: boolean } = {},
+): Promise<string> {
   const response = await fetch("/api/chat", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ placeId, message }),
+    body: JSON.stringify({ placeId, message, roast: Boolean(options.roast) }),
   });
 
   const payload = (await response.json()) as { reply: string } | ErrorPayload;

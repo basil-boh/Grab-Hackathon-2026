@@ -18,6 +18,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   const body = parseBody(req.body);
   const places = Array.isArray(body?.places) ? body.places.map(parsePlace).filter(Boolean) : [];
+  const roast = isRoastBodyFlag(body?.roast);
 
   if (places.length !== 2) {
     res.status(400).json({ error: "Exactly two places are required" });
@@ -38,13 +39,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const [aPersonality, bPersonality] = await Promise.all([
-      getPersonalityForPlace(aInput),
-      getPersonalityForPlace(bInput),
+      getPersonalityForPlace(aInput, { roast }),
+      getPersonalityForPlace(bInput, { roast }),
     ]);
 
     const generatedDuel = await generatePersonalityDuel(
       { side: "a", place: aPersonality.place, personality: aPersonality },
       { side: "b", place: bPersonality.place, personality: bPersonality },
+      { roast },
     );
     const participants = {
       a: toParticipant("a", aPersonality),
@@ -173,6 +175,10 @@ function optionalString(value: unknown) {
 function optionalNumber(value: unknown) {
   const numberValue = Number(value);
   return Number.isFinite(numberValue) ? numberValue : undefined;
+}
+
+function isRoastBodyFlag(value: unknown) {
+  return value === true || value === "true" || value === 1 || value === "1";
 }
 
 function buildWinRateTimeline(lines: GeneratedDuelLine[]) {

@@ -7,7 +7,7 @@ import { PersonalityCard } from "./components/PersonalityCard";
 import { RouteBanner } from "./components/RouteBanner";
 import { usePersonality } from "./hooks/usePersonality";
 import { fetchPersonalityDuel, type DuelSide, type PersonalityDuel } from "./services/personality";
-import { searchPois, type Poi } from "./services/poi";
+import { FOOD_SEARCH_KEYWORDS, searchPoisByKeywords, type Poi } from "./services/poi";
 import { fetchRoute, type LocationPoint } from "./services/route";
 import { useMapStore } from "./store/mapStore";
 
@@ -19,6 +19,7 @@ export default function App() {
   const setPersonality = useMapStore((state) => state.setPersonality);
   const activeRoute = useMapStore((state) => state.activeRoute);
   const setRoute = useMapStore((state) => state.setRoute);
+  const roastMode = useMapStore((state) => state.roastMode);
   const { personality, isLoading, error } = usePersonality(selectedPoi);
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
@@ -153,10 +154,10 @@ export default function App() {
     setDuelError(null);
 
     try {
-      const nextDuel = await fetchPersonalityDuel({ places: pair });
+      const nextDuel = await fetchPersonalityDuel({ places: pair, roast: roastMode });
       if (duelRequestId.current !== requestId) return;
-      setPersonality(nextDuel.places.a.place.id, nextDuel.places.a.personality);
-      setPersonality(nextDuel.places.b.place.id, nextDuel.places.b.personality);
+      setPersonality(nextDuel.places.a.place.id, nextDuel.places.a.personality, roastMode);
+      setPersonality(nextDuel.places.b.place.id, nextDuel.places.b.personality, roastMode);
       setDuel(nextDuel);
     } catch (err) {
       if (duelRequestId.current !== requestId) return;
@@ -230,7 +231,7 @@ export default function App() {
 
     try {
       const location = await getCurrentLocation();
-      const restaurants = await searchPois("restaurant food", undefined, { location, limit: 20 });
+      const restaurants = await searchPoisByKeywords(FOOD_SEARCH_KEYWORDS, undefined, { location, limit: 20 });
       const nearbyRestaurants = restaurants
         .filter((poi) => distanceBetweenMeters(location, poi) <= 2000)
         .sort((a, b) => distanceBetweenMeters(location, a) - distanceBetweenMeters(location, b));

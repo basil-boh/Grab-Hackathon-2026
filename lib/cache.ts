@@ -22,3 +22,7 @@ export const personalityCache =
   globalForCache.__grabmapsPersonalityCache ?? new Map<string, CachedPersonality>();
 
 globalForCache.__grabmapsPersonalityCache = personalityCache;
+
+export function personalityCacheKey(placeId: string, roast = false) {
+  return `${placeId}:${roast ? "roast" : "normal"}`;
+}

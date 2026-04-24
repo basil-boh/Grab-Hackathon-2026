@@ -77,12 +77,17 @@ export type PersonalityDuel = {
 
 type ErrorPayload = { error: string };
 
-export async function fetchPersonality(input: { id: string; name: string; lat: number; lng: number }): Promise<Personality> {
+export async function fetchPersonality(
+  input: { id: string; name: string; lat: number; lng: number },
+  options: { roast?: boolean } = {},
+): Promise<Personality> {
   const params = new URLSearchParams({
     name: input.name,
     lat: String(input.lat),
     lng: String(input.lng),
   });
+  if (options.roast) params.set("roast", "1");
+
   const response = await fetch(`/api/personality/${encodeURIComponent(input.id)}?${params}`);
   const payload = (await response.json()) as Personality | ErrorPayload;
   if (!response.ok || "error" in payload) {
@@ -96,6 +101,7 @@ export async function fetchPersonalityDuel(input: {
     { id: string; name: string; lat: number; lng: number; address?: string; category?: string; rating?: number },
     { id: string; name: string; lat: number; lng: number; address?: string; category?: string; rating?: number },
   ];
+  roast?: boolean;
 }): Promise<PersonalityDuel> {
   const response = await fetch("/api/personality/duel", {
     method: "POST",

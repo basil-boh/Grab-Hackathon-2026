@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { fetchPersonality, type Personality } from "../services/personality";
 import type { Poi } from "../services/poi";
-import { useMapStore } from "../store/mapStore";
+import { personalityCacheKey, useMapStore } from "../store/mapStore";
 
 export function usePersonality(poi?: Poi | null) {
   const placeId = poi?.id;
-  const cached = useMapStore((state) => (placeId ? state.personalityCache[placeId] : undefined));
+  const roastMode = useMapStore((state) => state.roastMode);
+  const cacheKey = placeId ? personalityCacheKey(placeId, roastMode) : undefined;
+  const cached = useMapStore((state) => (cacheKey ? state.personalityCache[cacheKey] : undefined));
   const setPersonality = useMapStore((state) => state.setPersonality);
   const [personality, setLocalPersonality] = useState<Personality | null>(cached ?? null);
   const [isLoading, setIsLoading] = useState(false);
@@ -32,10 +34,10 @@ export function usePersonality(poi?: Poi | null) {
     setError(null);
     setLocalPersonality(null);
 
-    fetchPersonality(poi)
+    fetchPersonality(poi, { roast: roastMode })
       .then((next) => {
         if (cancelled) return;
-        setPersonality(placeId, next);
+        setPersonality(placeId, next, roastMode);
         setLocalPersonality(next);
       })
       .catch((err: unknown) => {
@@ -49,7 +51,7 @@ export function usePersonality(poi?: Poi | null) {
     return () => {
       cancelled = true;
     };
-  }, [cached, placeId, poi, setPersonality]);
+  }, [cached, placeId, poi, roastMode, setPersonality]);
 
   return { personality, isLoading, error };
 }

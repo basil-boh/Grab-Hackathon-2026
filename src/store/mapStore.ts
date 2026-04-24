@@ -9,27 +9,34 @@ type MapState = {
   personalityCache: Record<string, Personality>;
   chatThreads: Record<string, ChatMessage[]>;
   activeRoute: RouteData | null;
+  roastMode: boolean;
   selectPoi: (poi: Poi) => void;
-  setPersonality: (placeId: string, personality: Personality) => void;
+  setPersonality: (placeId: string, personality: Personality, roastMode?: boolean) => void;
   addChatMessage: (placeId: string, message: ChatMessage) => void;
   setRoute: (route: RouteData | null) => void;
+  setRoastMode: (value: boolean) => void;
 };
+
+export function personalityCacheKey(placeId: string, roastMode: boolean) {
+  return `${placeId}:${roastMode ? "roast" : "normal"}`;
+}
 
 export const useMapStore = create<MapState>((set) => ({
   selectedPoi: null,
   personalityCache: {},
   chatThreads: {},
   activeRoute: null,
+  roastMode: false,
   selectPoi: (poi) =>
     set({
       selectedPoi: poi,
       activeRoute: null,
     }),
-  setPersonality: (placeId, personality) =>
+  setPersonality: (placeId, personality, roastMode = false) =>
     set((state) => ({
       personalityCache: {
         ...state.personalityCache,
-        [placeId]: personality,
+        [personalityCacheKey(placeId, roastMode)]: personality,
       },
     })),
   addChatMessage: (placeId, message) =>
@@ -40,4 +47,5 @@ export const useMapStore = create<MapState>((set) => ({
       },
     })),
   setRoute: (route) => set({ activeRoute: route }),
+  setRoastMode: (value) => set({ roastMode: value }),
 }));

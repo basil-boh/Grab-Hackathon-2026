@@ -1,4 +1,4 @@
-import { PERSONALITY_SYSTEM_PROMPT, isArchetype, personalityJsonSchema } from "./archetypes";
+import { PERSONALITY_SYSTEM_PROMPT, buildRoastSystemPrompt, isArchetype, personalityJsonSchema } from "./archetypes";
 import type { Personality } from "./cache";
 import { getServerEnv } from "./env";
 import type { NormalizedPlace, Review } from "./grabClient";
@@ -68,7 +68,7 @@ async function openAiChat(body: Record<string, unknown>, label: string) {
   });
 }
 
-export async function generatePersonality(place: NormalizedPlace, reviews: Review[]) {
+export async function generatePersonality(place: NormalizedPlace, reviews: Review[], options: { roast?: boolean } = {}) {
   const userPayload = {
     place: {
       name: place.name,
@@ -89,7 +89,7 @@ export async function generatePersonality(place: NormalizedPlace, reviews: Revie
       model: "gpt-4o-mini",
       temperature: 0.8,
       messages: [
-        { role: "system", content: PERSONALITY_SYSTEM_PROMPT },
+        { role: "system", content: options.roast ? buildRoastSystemPrompt(place) : PERSONALITY_SYSTEM_PROMPT },
         { role: "user", content: JSON.stringify(userPayload) },
       ],
       response_format: {
@@ -113,7 +113,7 @@ export async function generatePersonality(place: NormalizedPlace, reviews: Revie
   return parsed;
 }
 
-export async function generateChatReply(personality: Personality, message: string) {
+export async function generateChatReply(personality: Personality, message: string, options: { roast?: boolean } = {}) {
   const payload = await openAiChat(
     {
       model: "gpt-4o-mini",
@@ -123,6 +123,11 @@ export async function generateChatReply(personality: Personality, message: strin
         {
           role: "system",
           content: [
+            ...(options.roast
+              ? [
+                  "ROAST MODE: Reply in savage-comedy roast register, using the place's reviews and venue details as ammunition. Be witty, specific, and cutting while staying in character.",
+                ]
+              : []),
             "You are replying as a Singapore POI character.",
             `Archetype: ${personality.archetype}`,
             `Character name: ${personality.displayName}`,
@@ -166,7 +171,11 @@ type DuelParticipant = {
   personality: Personality;
 };
 
-export async function generatePersonalityDuel(a: DuelParticipant, b: DuelParticipant): Promise<GeneratedPersonalityDuel> {
+export async function generatePersonalityDuel(
+  a: DuelParticipant,
+  b: DuelParticipant,
+  options: { roast?: boolean } = {},
+): Promise<GeneratedPersonalityDuel> {
   const payload = await openAiChat(
     {
       model: "gpt-4o-mini",
@@ -179,6 +188,11 @@ export async function generatePersonalityDuel(a: DuelParticipant, b: DuelPartici
             "You write a punchy live debate between two Singapore map POI characters.",
             `Generate exactly ${DUEL_TURN_COUNT} short turns that strictly alternate speakers: a, b, a, b, a, b.`,
             "Each line is playful trash-talk about the other place's reviews, rating, category, or venue vibe.",
+            ...(options.roast
+              ? [
+                  "Roast Mode is ON: make both characters sharper, more savage, more specific, and unmistakably in stand-up roast battle mode.",
+                ]
+              : []),
             "After the debate, suggest which side currently has the stronger case, but do not decide for the user.",
             "The suggestion should consider review signal, argument quality, place fit, and the line impact scores.",
             "For every line, assign impact from 1-10: 1 is a weak comeback, 10 is a devastating crowd-winning roast.",

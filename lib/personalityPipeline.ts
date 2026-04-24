@@ -1,4 +1,4 @@
-import { personalityCache, type CachedPersonality, type Personality } from "./cache";
+import { personalityCache, personalityCacheKey, type CachedPersonality, type Personality } from "./cache";
 import { fetchGoogleReviews } from "./googlePlacesClient";
 import { fetchGrabPlaceDetails, type NormalizedPlace } from "./grabClient";
 import { generatePersonality } from "./openaiClient";
@@ -7,8 +7,13 @@ import { pickVoice } from "./pickVoice";
 export type PersonalityLookupInput = Pick<NormalizedPlace, "id" | "name" | "lat" | "lng"> &
   Partial<Pick<NormalizedPlace, "address" | "category" | "rating">>;
 
-export async function getPersonalityForPlace(input: PersonalityLookupInput): Promise<CachedPersonality> {
-  const cached = personalityCache.get(input.id);
+export async function getPersonalityForPlace(
+  input: PersonalityLookupInput,
+  options: { roast?: boolean } = {},
+): Promise<CachedPersonality> {
+  const roast = Boolean(options.roast);
+  const cacheKey = personalityCacheKey(input.id, roast);
+  const cached = personalityCache.get(cacheKey);
   if (cached) return cached;
 
   const fallback: NormalizedPlace = {
@@ -28,7 +33,7 @@ export async function getPersonalityForPlace(input: PersonalityLookupInput): Pro
 
   const place = placeResult.status === "fulfilled" ? placeResult.value : fallback;
   const reviews = reviewsResult.status === "fulfilled" ? reviewsResult.value : [];
-  const generated = await generatePersonality(place, reviews);
+  const generated = await generatePersonality(place, reviews, { roast });
   const personality: CachedPersonality = {
     ...generated,
     imageUrl: `/assets/images/${generated.archetype}.webp`,
@@ -37,7 +42,7 @@ export async function getPersonalityForPlace(input: PersonalityLookupInput): Pro
     place,
   };
 
-  personalityCache.set(input.id, personality);
+  personalityCache.set(cacheKey, personality);
   return personality;
 }
 

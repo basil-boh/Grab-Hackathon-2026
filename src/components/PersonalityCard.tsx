@@ -5,6 +5,7 @@ import { useTts } from "../hooks/useTts";
 import { ratingToSentiment, sentimentColorClasses } from "../lib/sentiment";
 import type { Personality } from "../services/personality";
 import type { Poi } from "../services/poi";
+import { useMapStore } from "../store/mapStore";
 import { ChatThread } from "./ChatThread";
 
 type Props = {
@@ -18,13 +19,17 @@ type Props = {
 
 export function PersonalityCard({ poi, personality, isLoading, error, onDirections, routeLoading }: Props) {
   const { play, isSpeaking, error: voiceError } = useTts();
-  const { messages, send, isSending, error: chatError } = useChat(poi?.id);
+  const roastMode = useMapStore((state) => state.roastMode);
+  const setRoastMode = useMapStore((state) => state.setRoastMode);
+  const { messages, send, isSending, error: chatError } = useChat(poi?.id, roastMode);
   const autoplayedFor = useRef<string | null>(null);
+  const showGrabFoodCta = Boolean(poi && personality && isFoodRelated(poi, personality));
 
   useEffect(() => {
     if (!personality || !poi) return;
-    if (autoplayedFor.current === poi.id) return;
-    autoplayedFor.current = poi.id;
+    const autoplayKey = `${poi.id}:${personality.intro}`;
+    if (autoplayedFor.current === autoplayKey) return;
+    autoplayedFor.current = autoplayKey;
 
     play(personality.intro, { voiceId: personality.voiceId }).catch(() => {
       // Browser blocked autoplay; user can still tap Play manually.
@@ -50,9 +55,23 @@ export function PersonalityCard({ poi, personality, isLoading, error, onDirectio
   return (
     <aside className="flex h-full w-[430px] flex-col border-l border-slate-200 bg-white">
       <div className="border-b border-slate-200 px-6 py-5">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">{poi.category || "Singapore POI"}</p>
-        <h1 className="mt-2 text-2xl font-bold leading-tight text-slate-950">{poi.name}</h1>
-        {poi.address ? <p className="mt-2 text-sm leading-5 text-slate-500">{poi.address}</p> : null}
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-teal-700">{poi.category || "Singapore POI"}</p>
+            <h1 className="mt-2 text-2xl font-bold leading-tight text-slate-950">{poi.name}</h1>
+            {poi.address ? <p className="mt-2 text-sm leading-5 text-slate-500">{poi.address}</p> : null}
+          </div>
+          <button
+            type="button"
+            onClick={() => setRoastMode(!roastMode)}
+            className={`shrink-0 rounded-full px-3 py-2 text-sm font-semibold transition ${
+              roastMode ? "bg-red-600 text-white" : "bg-slate-200 text-slate-700 hover:bg-slate-300"
+            }`}
+            aria-pressed={roastMode}
+          >
+            🔥 Roast
+          </button>
+        </div>
       </div>
 
       {isLoading ? (
@@ -155,8 +174,30 @@ export function PersonalityCard({ poi, personality, isLoading, error, onDirectio
           ) : null}
 
           <ChatThread messages={messages} onSend={send} isSending={isSending} error={chatError} disabled={!personality} />
+
+          {showGrabFoodCta ? (
+            <button
+              type="button"
+              onClick={() =>
+                window.open(
+                  `https://food.grab.com/sg/en/restaurants?search=${encodeURIComponent(poi.name)}`,
+                  "_blank",
+                )
+              }
+              className="mt-4 w-full rounded-lg bg-green-600 px-4 py-3 font-semibold text-white transition hover:bg-green-700"
+            >
+              🛵 Order from {personality.displayName} on GrabFood →
+            </button>
+          ) : null}
         </div>
       ) : null}
     </aside>
   );
+}
+
+const FOOD_KEYWORDS = ["food", "restaurant", "cafe", "eatery", "hawker", "chef", "kopitiam", "bar"];
+
+function isFoodRelated(poi: Poi, personality: Personality) {
+  const haystack = `${poi.category ?? ""} ${personality.archetype}`.toLowerCase();
+  return FOOD_KEYWORDS.some((keyword) => haystack.includes(keyword));
 }
