@@ -137,9 +137,9 @@ export async function fetchGrabPlaceDetails(placeId: string) {
   return normalizePlace(extractPlace(data) ?? data);
 }
 
-export async function fetchGrabRoute(destLng: number, destLat: number) {
+export async function fetchGrabRoute(originLng: number, originLat: number, destLng: number, destLat: number) {
   const params = new URLSearchParams();
-  params.append("coordinates", "103.8198,1.3521");
+  params.append("coordinates", `${originLng},${originLat}`);
   params.append("coordinates", `${destLng},${destLat}`);
   params.set("profile", "driving");
   params.set("overview", "full");
@@ -147,11 +147,13 @@ export async function fetchGrabRoute(destLng: number, destLat: number) {
   const data = await grabFetch("/maps/eta/v1/direction", params, "Grab directions");
   const route = Array.isArray(data?.routes) ? data.routes[0] : undefined;
   if (!route) throw new Error("Grab directions returned no route");
+  const geometry = normalizeGeometry(route.geometry);
+  if (!geometry?.coordinates?.length) throw new Error("Grab directions returned no route geometry");
 
   return {
     distanceMeters: Number(route.distance ?? route.distanceMeters ?? route.summary?.distance ?? 0),
     durationSeconds: Number(route.duration ?? route.durationSeconds ?? route.summary?.duration ?? 0),
-    geometry: normalizeGeometry(route.geometry),
+    geometry,
   };
 }
 
@@ -250,26 +252,53 @@ function normalizeGeometry(geometry: unknown) {
   if (!geometry) return undefined;
 
   if (typeof geometry === "string") {
-    const coordinates = decodePolyline(geometry);
+    const coordinates = sanitizeRouteCoordinates(decodePolyline(geometry));
     return coordinates.length ? { type: "LineString" as const, coordinates } : undefined;
   }
 
   const maybeGeometry = geometry as any;
   if (maybeGeometry.type === "LineString" && Array.isArray(maybeGeometry.coordinates)) {
-    return {
+    const coordinates = sanitizeRouteCoordinates(maybeGeometry.coordinates);
+    return coordinates.length ? {
       type: "LineString" as const,
-      coordinates: maybeGeometry.coordinates as [number, number][],
-    };
+      coordinates,
+    } : undefined;
   }
 
   if (Array.isArray(maybeGeometry.coordinates)) {
-    return {
+    const coordinates = sanitizeRouteCoordinates(maybeGeometry.coordinates);
+    return coordinates.length ? {
       type: "LineString" as const,
-      coordinates: maybeGeometry.coordinates as [number, number][],
-    };
+      coordinates,
+    } : undefined;
   }
 
   return undefined;
+}
+
+function sanitizeRouteCoordinates(coordinates: unknown[]) {
+  return coordinates.map(toLngLat).filter((coord): coord is [number, number] => Boolean(coord));
+}
+
+function toLngLat(value: unknown): [number, number] | undefined {
+  if (Array.isArray(value)) {
+    const lng = Number(value[0]);
+    const lat = Number(value[1]);
+    return isValidLngLat(lng, lat) ? [lng, lat] : undefined;
+  }
+
+  if (value && typeof value === "object") {
+    const point = value as Record<string, unknown>;
+    const lng = Number(point.lng ?? point.lon ?? point.longitude);
+    const lat = Number(point.lat ?? point.latitude);
+    return isValidLngLat(lng, lat) ? [lng, lat] : undefined;
+  }
+
+  return undefined;
+}
+
+function isValidLngLat(lng: number, lat: number) {
+  return Number.isFinite(lng) && Number.isFinite(lat) && Math.abs(lng) <= 180 && Math.abs(lat) <= 90;
 }
 
 function prefixRelativeGrabUrls(value: unknown): unknown {
@@ -309,6 +338,7 @@ function decodePolyline(encoded: string): [number, number][] {
   let lat = 0;
   let lng = 0;
   const coordinates: [number, number][] = [];
+  const precision = 1e6;
 
   while (index < encoded.length) {
     const latResult = decodeChunk(encoded, index);
@@ -317,7 +347,7 @@ function decodePolyline(encoded: string): [number, number][] {
     index = lngResult.nextIndex;
     lat += latResult.value;
     lng += lngResult.value;
-    coordinates.push([lng / 1e5, lat / 1e5]);
+    coordinates.push([lng / precision, lat / precision]);
   }
 
   return coordinates;

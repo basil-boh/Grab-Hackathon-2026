@@ -24,14 +24,14 @@ function isErrorPayload(payload: unknown): payload is ErrorPayload {
   return typeof payload === "object" && payload !== null && "error" in payload;
 }
 
-export async function searchPois(keyword: string): Promise<Poi[]> {
+export async function searchPois(keyword: string, signal?: AbortSignal): Promise<Poi[]> {
   const params = new URLSearchParams({
     keyword,
     location: `${SG_CENTER.lat},${SG_CENTER.lng}`,
     limit: "10",
   });
 
-  const response = await fetch(`/api/poi/search?${params}`);
+  const response = await fetch(`/api/poi/search?${params}`, { signal });
   const payload = await readJson<{ items: Poi[] }>(response);
   return payload.items;
 }

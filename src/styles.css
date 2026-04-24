@@ -47,3 +47,21 @@ textarea {
   height: 26px;
   background: #007b7a;
 }
+
+.current-location-marker {
+  position: relative;
+  width: 18px;
+  height: 18px;
+  border: 3px solid #ffffff;
+  border-radius: 999px;
+  background: #2563eb;
+  box-shadow: 0 0 0 8px rgba(37, 99, 235, 0.18), 0 10px 28px rgba(15, 23, 42, 0.24);
+}
+
+.current-location-marker::after {
+  position: absolute;
+  inset: -13px;
+  border: 2px solid rgba(37, 99, 235, 0.28);
+  border-radius: 999px;
+  content: "";
+}

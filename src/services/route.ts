@@ -1,5 +1,10 @@
 import type { Poi } from "./poi";
 
+export type LocationPoint = {
+  lat: number;
+  lng: number;
+};
+
 export type RouteData = {
   distanceMeters: number;
   durationSeconds: number;
@@ -11,11 +16,16 @@ export type RouteData = {
 
 type ErrorPayload = { error: string };
 
-export async function fetchRoute(destination: Poi): Promise<RouteData> {
+export async function fetchRoute(destination: Poi, origin: LocationPoint): Promise<RouteData> {
   const response = await fetch("/api/route", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ lat: destination.lat, lng: destination.lng }),
+    body: JSON.stringify({
+      originLat: origin.lat,
+      originLng: origin.lng,
+      lat: destination.lat,
+      lng: destination.lng,
+    }),
   });
 
   const payload = (await response.json()) as RouteData | ErrorPayload;
