@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { personalityCache, personalityCacheKey } from "../lib/cache";
-import { generateChatReply } from "../lib/openaiClient";
+import { personalityCache, personalityCacheKey } from "../lib/cache.js";
+import { generateChatReply } from "../lib/openaiClient.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {

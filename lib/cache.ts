@@ -1,5 +1,5 @@
-import type { Archetype } from "./archetypes";
-import type { NormalizedPlace, Review } from "./grabClient";
+import type { Archetype } from "./archetypes.js";
+import type { NormalizedPlace, Review } from "./grabClient.js";
 
 export type Personality = {
   archetype: Archetype;

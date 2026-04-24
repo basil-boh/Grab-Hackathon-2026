@@ -1,8 +1,8 @@
-import { PERSONALITY_SYSTEM_PROMPT, buildRoastSystemPrompt, isArchetype, personalityJsonSchema } from "./archetypes";
-import type { Personality } from "./cache";
-import { getServerEnv } from "./env";
-import type { NormalizedPlace, Review } from "./grabClient";
-import { withTimeout } from "./withTimeout";
+import { PERSONALITY_SYSTEM_PROMPT, buildRoastSystemPrompt, isArchetype, personalityJsonSchema } from "./archetypes.js";
+import type { Personality } from "./cache.js";
+import { getServerEnv } from "./env.js";
+import type { NormalizedPlace, Review } from "./grabClient.js";
+import { withTimeout } from "./withTimeout.js";
 
 const OPENAI_TIMEOUT_MS = 10000;
 const DUEL_TURN_COUNT = 6;

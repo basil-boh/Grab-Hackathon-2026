@@ -1,5 +1,5 @@
-import registry from "./voiceRegistry.json";
-import type { Archetype } from "./archetypes";
+import registry from "./voiceRegistry.json" with { type: "json" };
+import type { Archetype } from "./archetypes.js";
 
 const voiceRegistry = registry as Record<Archetype, string[]>;
 

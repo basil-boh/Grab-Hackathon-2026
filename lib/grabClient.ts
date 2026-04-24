@@ -1,6 +1,6 @@
-import { withTimeout } from "./withTimeout";
-import { getServerEnv } from "./env";
-import grabStyleSnapshot from "./grabStyleSnapshot.json";
+import { withTimeout } from "./withTimeout.js";
+import { getServerEnv } from "./env.js";
+import grabStyleSnapshot from "./grabStyleSnapshot.json" with { type: "json" };
 
 const GRAB_BASE_URL = "https://maps.grab.com";
 const GRAB_API_BASE_URL = `${GRAB_BASE_URL}/api/v1`;

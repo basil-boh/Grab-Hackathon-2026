@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { fetchGoogleReviews } from "../lib/googlePlacesClient";
-import type { NormalizedPlace } from "../lib/grabClient";
+import { fetchGoogleReviews } from "../lib/googlePlacesClient.js";
+import type { NormalizedPlace } from "../lib/grabClient.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") {

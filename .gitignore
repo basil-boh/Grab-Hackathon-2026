@@ -19,3 +19,4 @@ dist
 GLB-models/**/*.glb
 GLB-models/**/*.gltf
 GLB-models/**/*.bin
+.vercel

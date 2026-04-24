@@ -1,12 +1,12 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import type { CachedPersonality } from "../../lib/cache";
-import type { NormalizedPlace } from "../../lib/grabClient";
-import { generatePersonalityDuel, type DuelSide, type GeneratedDuelLine } from "../../lib/openaiClient";
+import type { CachedPersonality } from "../../lib/cache.js";
+import type { NormalizedPlace } from "../../lib/grabClient.js";
+import { generatePersonalityDuel, type DuelSide, type GeneratedDuelLine } from "../../lib/openaiClient.js";
 import {
   getPersonalityForPlace,
   toPublicPersonality,
   type PersonalityLookupInput,
-} from "../../lib/personalityPipeline";
+} from "../../lib/personalityPipeline.js";
 
 const MAX_DUEL_DISTANCE_METERS = 500;
 

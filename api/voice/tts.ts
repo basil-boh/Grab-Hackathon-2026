@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { synthesizeElevenSpeech } from "../../lib/elevenClient";
-import { isSentiment, voiceForSentiment } from "../../lib/sentimentVoices";
+import { synthesizeElevenSpeech } from "../../lib/elevenClient.js";
+import { isSentiment, voiceForSentiment } from "../../lib/sentimentVoices.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {

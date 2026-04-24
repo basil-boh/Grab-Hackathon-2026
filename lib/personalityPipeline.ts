@@ -1,8 +1,8 @@
-import { personalityCache, personalityCacheKey, type CachedPersonality, type Personality } from "./cache";
-import { fetchGoogleReviews } from "./googlePlacesClient";
-import { fetchGrabPlaceDetails, type NormalizedPlace } from "./grabClient";
-import { generatePersonality } from "./openaiClient";
-import { pickVoice } from "./pickVoice";
+import { personalityCache, personalityCacheKey, type CachedPersonality, type Personality } from "./cache.js";
+import { fetchGoogleReviews } from "./googlePlacesClient.js";
+import { fetchGrabPlaceDetails, type NormalizedPlace } from "./grabClient.js";
+import { generatePersonality } from "./openaiClient.js";
+import { pickVoice } from "./pickVoice.js";
 
 export type PersonalityLookupInput = Pick<NormalizedPlace, "id" | "name" | "lat" | "lng"> &
   Partial<Pick<NormalizedPlace, "address" | "category" | "rating">>;

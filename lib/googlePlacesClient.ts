@@ -1,6 +1,6 @@
-import { withTimeout } from "./withTimeout";
-import { getServerEnv } from "./env";
-import type { NormalizedPlace, Review } from "./grabClient";
+import { withTimeout } from "./withTimeout.js";
+import { getServerEnv } from "./env.js";
+import type { NormalizedPlace, Review } from "./grabClient.js";
 
 const GOOGLE_TIMEOUT_MS = 6000;
 const PLACES_BASE = "https://places.googleapis.com/v1";

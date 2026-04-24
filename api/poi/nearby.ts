@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { nearbyGrabPois } from "../../lib/grabClient";
+import { nearbyGrabPois } from "../../lib/grabClient.js";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "GET") {

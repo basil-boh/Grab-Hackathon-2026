@@ -1,6 +1,6 @@
-import { getServerEnv } from "./env";
-import { withTimeout } from "./withTimeout";
-import type { VoiceSettings } from "./sentimentVoices";
+import { getServerEnv } from "./env.js";
+import { withTimeout } from "./withTimeout.js";
+import type { VoiceSettings } from "./sentimentVoices.js";
 
 const ELEVEN_TIMEOUT_MS = 12000;
 
