@@ -1,0 +1,9 @@
+{
+  "name": "grab-maps",
+  "version": "0.0.0-local",
+  "type": "module",
+  "exports": "./index.js",
+  "peerDependencies": {
+    "maplibre-gl": "^4.7.1"
+  }
+}
