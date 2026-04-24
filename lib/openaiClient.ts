@@ -70,7 +70,7 @@ export async function generatePersonality(place: NormalizedPlace, reviews: Revie
     throw new Error("OpenAI personality returned no content");
   }
 
-  const parsed = JSON.parse(content) as Omit<Personality, "imageUrl" | "voiceId">;
+  const parsed = JSON.parse(content) as Pick<Personality, "archetype" | "displayName" | "intro">;
   if (!isArchetype(parsed.archetype)) {
     throw new Error("OpenAI personality returned an unknown archetype");
   }
@@ -91,7 +91,7 @@ export async function generateChatReply(personality: Personality, message: strin
             "You are replying as a Singapore POI character.",
             `Archetype: ${personality.archetype}`,
             `Character name: ${personality.displayName}`,
-            `Character monologue context: ${personality.monologue}`,
+            `Character intro context: ${personality.intro}`,
             "Stay in character. Answer only the user's latest message. Keep it under 70 words.",
           ].join("\n"),
         },

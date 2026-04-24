@@ -4,14 +4,14 @@ import type { NormalizedPlace, Review } from "./grabClient";
 export type Personality = {
   archetype: Archetype;
   displayName: string;
-  monologue: string;
+  intro: string;
   imageUrl: string;
   voiceId: string;
+  reviews: Review[];
 };
 
 export type CachedPersonality = Personality & {
   place: NormalizedPlace;
-  reviews: Review[];
 };
 
 const globalForCache = globalThis as typeof globalThis & {

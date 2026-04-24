@@ -1,5 +1,6 @@
 import type { VercelRequest, VercelResponse } from "@vercel/node";
 import { synthesizeElevenSpeech } from "../../lib/elevenClient";
+import { isSentiment, voiceForSentiment } from "../../lib/sentimentVoices";
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
@@ -8,15 +9,31 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   const text = String(req.body?.text ?? "").trim();
-  const voiceId = String(req.body?.voiceId ?? "").trim();
+  if (!text) {
+    res.status(400).json({ error: "text is required" });
+    return;
+  }
 
-  if (!text || !voiceId) {
-    res.status(400).json({ error: "text and voiceId are required" });
+  const sentiment = req.body?.sentiment;
+  const bodyVoiceId = String(req.body?.voiceId ?? "").trim();
+
+  let voiceId: string;
+  let voiceSettings;
+
+  if (isSentiment(sentiment)) {
+    const mapped = voiceForSentiment(sentiment);
+    voiceId = mapped.voiceId;
+    voiceSettings = mapped.settings;
+  } else if (bodyVoiceId) {
+    voiceId = bodyVoiceId;
+    voiceSettings = undefined;
+  } else {
+    res.status(400).json({ error: "voiceId or sentiment is required" });
     return;
   }
 
   try {
-    const audio = await synthesizeElevenSpeech(text, voiceId);
+    const audio = await synthesizeElevenSpeech(text, voiceId, voiceSettings);
     res.setHeader("Content-Type", "audio/mpeg");
     res.setHeader("Cache-Control", "no-store");
     res.status(200).send(audio);
