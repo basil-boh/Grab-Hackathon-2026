@@ -15,7 +15,7 @@ dist
 .DS_Store
 *.log
 
-# Local 3D assets (not committed)
-GLB-models/**/*.glb
+# 3D models (not committed)
+*.glb
 GLB-models/**/*.gltf
 GLB-models/**/*.bin

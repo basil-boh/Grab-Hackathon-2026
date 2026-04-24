@@ -55,6 +55,7 @@ function resolveApiRoute(pathname: string) {
     "/api/poi/search": "/api/poi/search.ts",
     "/api/poi/nearby": "/api/poi/nearby.ts",
     "/api/poi/details": "/api/poi/details.ts",
+    "/api/poi/models": "/api/poi/models.ts",
     "/api/route": "/api/route.ts",
     "/api/reviews": "/api/reviews.ts",
     "/api/voice/tts": "/api/voice/tts.ts",

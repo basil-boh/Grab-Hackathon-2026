@@ -1,8 +1,10 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
+import { createRoot, type Root } from "react-dom/client";
 import maplibregl, { type Map as MapLibreMap, type Marker } from "maplibre-gl";
 import { LocateFixed, MapPin, Search } from "lucide-react";
+import { Poi3DMarker } from "./Poi3DMarker";
 import { DEFAULT_ZOOM, SG_CENTER } from "../lib/config";
-import { nearbyPois, searchPois, type Poi } from "../services/poi";
+import { assignPoiModels, nearbyPois, searchPois, type Poi } from "../services/poi";
 import type { LocationPoint, RouteData } from "../services/route";
 
 type Props = {
@@ -27,11 +29,17 @@ const BUILDING_3D_LAYER_ID = "grab-3d-buildings";
 const MAP_3D_PITCH = 58;
 const MAP_3D_BEARING = -24;
 
+type PoiMarker = {
+  marker: Marker;
+  root: Root;
+  render: (zoom: number) => void;
+};
+
 export function GrabMap({ selectedPoi, activeRoute, userLocation, onPoiTap, onLocateMe, isLocating }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<MapLibreMap | null>(null);
   const grabRef = useRef<{ destroy?: () => void } | null>(null);
-  const markersRef = useRef<Marker[]>([]);
+  const markersRef = useRef<PoiMarker[]>([]);
   const userLocationMarkerRef = useRef<Marker | null>(null);
   const suppressAutocompleteRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
@@ -115,7 +123,7 @@ export function GrabMap({ selectedPoi, activeRoute, userLocation, onPoiTap, onLo
 
     return () => {
       cancelled = true;
-      markersRef.current.forEach((marker) => marker.remove());
+      removePoiMarkers(markersRef.current);
       markersRef.current = [];
       userLocationMarkerRef.current?.remove();
       userLocationMarkerRef.current = null;
@@ -149,19 +157,44 @@ export function GrabMap({ selectedPoi, activeRoute, userLocation, onPoiTap, onLo
     const map = mapRef.current;
     if (!map || !mapReady) return;
 
-    markersRef.current.forEach((marker) => marker.remove());
+    removePoiMarkers(markersRef.current);
     markersRef.current = pois.filter(isValidPoiLocation).map((poi) => {
-      const markerEl = document.createElement("button");
-      markerEl.type = "button";
-      markerEl.className = `poi-marker ${selectedPoi?.id === poi.id ? "is-selected" : ""}`;
-      markerEl.title = poi.name;
-      markerEl.addEventListener("click", () => onPoiTap(poi));
+      const markerEl = document.createElement("div");
+      markerEl.className = "poi-3d-marker-shell";
+      const root = createRoot(markerEl);
+      const render = (zoom: number) => {
+        root.render(
+          <Poi3DMarker
+            poi={poi}
+            isSelected={selectedPoi?.id === poi.id}
+            zoom={zoom}
+            onSelect={(selected) => void onPoiTap(selected)}
+          />,
+        );
+      };
+      render(map.getZoom());
 
-      return new maplibregl.Marker({ element: markerEl, anchor: "center" })
+      const marker = new maplibregl.Marker({ element: markerEl, anchor: "bottom", offset: [0, 0] })
         .setLngLat([poi.lng, poi.lat])
         .addTo(map);
+
+      return { marker, root, render };
     });
   }, [mapReady, onPoiTap, pois, selectedPoi?.id]);
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+
+    const updateMarkerScale = () => {
+      markersRef.current.forEach((poiMarker) => poiMarker.render(map.getZoom()));
+    };
+
+    map.on("zoomend", updateMarkerScale);
+    return () => {
+      map.off("zoomend", updateMarkerScale);
+    };
+  }, [mapReady]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -269,7 +302,7 @@ export function GrabMap({ selectedPoi, activeRoute, userLocation, onPoiTap, onLo
       setIsSuggesting(true);
       setSearchError(null);
 
-      searchPois(keyword, controller.signal)
+      searchPois(keyword, controller.signal, { includeModels: false })
         .then((items) => {
           setSuggestions(items);
           setIsAutocompleteOpen(true);
@@ -317,16 +350,26 @@ export function GrabMap({ selectedPoi, activeRoute, userLocation, onPoiTap, onLo
     }
   }
 
-  function choosePoi(poi: Poi) {
-    suppressAutocompleteRef.current = true;
-    setQuery(poi.name);
-    setPois((current) => {
-      if (current.some((item) => item.id === poi.id)) return current;
-      return [poi, ...current];
-    });
-    setSuggestions([]);
-    setIsAutocompleteOpen(false);
-    void onPoiTap(poi);
+  async function choosePoi(poi: Poi) {
+    try {
+      setSearchError(null);
+      const [modelledPoi] = poi.modelPath ? [poi] : await assignPoiModels([poi]);
+      if (!modelledPoi) throw new Error("Model classification returned no POI");
+
+      suppressAutocompleteRef.current = true;
+      setQuery(modelledPoi.name);
+      setPois((current) => {
+        if (current.some((item) => item.id === modelledPoi.id)) {
+          return current.map((item) => (item.id === modelledPoi.id ? { ...item, ...modelledPoi } : item));
+        }
+        return [modelledPoi, ...current];
+      });
+      setSuggestions([]);
+      setIsAutocompleteOpen(false);
+      void onPoiTap(modelledPoi);
+    } catch (err) {
+      setSearchError(err instanceof Error ? err.message : "Model classification failed");
+    }
   }
 
   return (
@@ -379,7 +422,7 @@ export function GrabMap({ selectedPoi, activeRoute, userLocation, onPoiTap, onLo
                     type="button"
                     key={poi.id}
                     onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => choosePoi(poi)}
+                    onClick={() => void choosePoi(poi)}
                     className="flex w-full items-start gap-3 border-b border-slate-100 px-4 py-3 text-left transition last:border-b-0 hover:bg-slate-50"
                   >
                     <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-teal-700" />
@@ -409,7 +452,7 @@ export function GrabMap({ selectedPoi, activeRoute, userLocation, onPoiTap, onLo
             <button
               type="button"
               key={poi.id}
-              onClick={() => choosePoi(poi)}
+              onClick={() => void choosePoi(poi)}
               className={`block w-full border-b border-slate-100 px-4 py-3 text-left transition last:border-b-0 hover:bg-slate-50 ${
                 selectedPoi?.id === poi.id ? "bg-teal-50" : "bg-white"
               }`}
@@ -497,6 +540,13 @@ function drawRoute(map: MapLibreMap, activeRoute: RouteData) {
       bearing: MAP_3D_BEARING,
     });
   }
+}
+
+function removePoiMarkers(markers: PoiMarker[]) {
+  markers.forEach(({ marker, root }) => {
+    marker.remove();
+    window.setTimeout(() => root.unmount(), 0);
+  });
 }
 
 function enable3DMap(map: MapLibreMap) {
