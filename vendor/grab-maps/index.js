@@ -13,6 +13,9 @@ export class GrabMapsLib {
       style: options.style,
       center: [Number(options.lng ?? 103.8198), Number(options.lat ?? 1.3521)],
       zoom: Number(options.zoom ?? 12),
+      pitch: Number(options.pitch ?? 0),
+      bearing: Number(options.bearing ?? 0),
+      maxPitch: Number(options.maxPitch ?? 60),
       attributionControl: options.attribution !== false,
       transformRequest: (url, resourceType) => {
         if (typeof options.transformRequest === "function") {

@@ -21,7 +21,11 @@ type GrabMapsConstructor = new (options: Record<string, unknown>) => {
 };
 
 const ROUTE_SOURCE_ID = "selected-route-source";
+const ROUTE_CASING_LAYER_ID = "selected-route-casing-layer";
 const ROUTE_LAYER_ID = "selected-route-layer";
+const BUILDING_3D_LAYER_ID = "grab-3d-buildings";
+const MAP_3D_PITCH = 58;
+const MAP_3D_BEARING = -24;
 
 export function GrabMap({ selectedPoi, activeRoute, userLocation, onPoiTap, onLocateMe, isLocating }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -78,10 +82,13 @@ export function GrabMap({ selectedPoi, activeRoute, userLocation, onPoiTap, onLo
           lat: SG_CENTER.lat,
           lng: SG_CENTER.lng,
           zoom: DEFAULT_ZOOM,
+          pitch: MAP_3D_PITCH,
+          bearing: MAP_3D_BEARING,
+          maxPitch: 70,
           navigation: true,
           attribution: true,
           showSearchBar: false,
-          showLayersMenu: false,
+          showLayersMenu: true,
           showWaypointsModal: false,
         });
 
@@ -91,6 +98,7 @@ export function GrabMap({ selectedPoi, activeRoute, userLocation, onPoiTap, onLo
           const map = grab.getMap?.();
           if (map) {
             mapRef.current = map;
+            enable3DMap(map);
             setMapReady(true);
             map.resize();
           }
@@ -164,6 +172,8 @@ export function GrabMap({ selectedPoi, activeRoute, userLocation, onPoiTap, onLo
       map.flyTo({
         center: [selectedPoi.lng, selectedPoi.lat],
         zoom: Math.max(map.getZoom(), 14),
+        pitch: MAP_3D_PITCH,
+        bearing: MAP_3D_BEARING,
         essential: true,
       });
     } catch (err) {
@@ -200,6 +210,8 @@ export function GrabMap({ selectedPoi, activeRoute, userLocation, onPoiTap, onLo
       map.flyTo({
         center: lngLat,
         zoom: Math.max(map.getZoom(), 15),
+        pitch: MAP_3D_PITCH,
+        bearing: MAP_3D_BEARING,
         essential: true,
       });
     } catch (err) {
@@ -447,6 +459,20 @@ function drawRoute(map: MapLibreMap, activeRoute: RouteData) {
       data: routeGeoJson as GeoJSON.Feature<GeoJSON.LineString>,
     });
     map.addLayer({
+      id: ROUTE_CASING_LAYER_ID,
+      type: "line",
+      source: ROUTE_SOURCE_ID,
+      layout: {
+        "line-cap": "round",
+        "line-join": "round",
+      },
+      paint: {
+        "line-color": "#ffffff",
+        "line-width": 12,
+        "line-opacity": 0.95,
+      },
+    });
+    map.addLayer({
       id: ROUTE_LAYER_ID,
       type: "line",
       source: ROUTE_SOURCE_ID,
@@ -455,21 +481,69 @@ function drawRoute(map: MapLibreMap, activeRoute: RouteData) {
         "line-join": "round",
       },
       paint: {
-        "line-color": "#007b7a",
-        "line-width": 6,
-        "line-opacity": 0.9,
+        "line-color": "#00a6a6",
+        "line-width": 7,
+        "line-opacity": 1,
       },
     });
   }
 
   const bounds = getCoordinateBounds(coordinates);
   if (bounds) {
-    map.fitBounds(bounds, { padding: 80, duration: 800 });
+    map.fitBounds(bounds, {
+      padding: 80,
+      duration: 800,
+      pitch: MAP_3D_PITCH,
+      bearing: MAP_3D_BEARING,
+    });
   }
+}
+
+function enable3DMap(map: MapLibreMap) {
+  map.setPitch(MAP_3D_PITCH);
+  map.setBearing(MAP_3D_BEARING);
+
+  const addBuildings = () => add3DBuildings(map);
+  if (map.isStyleLoaded()) {
+    addBuildings();
+  } else {
+    map.once("load", addBuildings);
+  }
+}
+
+function add3DBuildings(map: MapLibreMap) {
+  if (map.getLayer(BUILDING_3D_LAYER_ID) || !map.getSource("grabmaptiles")) return;
+
+  const firstSymbolLayerId = map.getStyle().layers?.find((layer) => layer.type === "symbol")?.id;
+  map.addLayer(
+    {
+      id: BUILDING_3D_LAYER_ID,
+      type: "fill-extrusion",
+      source: "grabmaptiles",
+      "source-layer": "building",
+      minzoom: 13,
+      paint: {
+        "fill-extrusion-color": "#d7dce0",
+        "fill-extrusion-height": [
+          "interpolate",
+          ["linear"],
+          ["zoom"],
+          13,
+          0,
+          15,
+          ["to-number", ["get", "render_height"], ["get", "height"], 28],
+        ],
+        "fill-extrusion-base": ["to-number", ["get", "render_min_height"], ["get", "min_height"], 0],
+        "fill-extrusion-opacity": 0.72,
+      },
+    },
+    firstSymbolLayerId,
+  );
 }
 
 function clearRoute(map: MapLibreMap) {
   if (map.getLayer(ROUTE_LAYER_ID)) map.removeLayer(ROUTE_LAYER_ID);
+  if (map.getLayer(ROUTE_CASING_LAYER_ID)) map.removeLayer(ROUTE_CASING_LAYER_ID);
   if (map.getSource(ROUTE_SOURCE_ID)) map.removeSource(ROUTE_SOURCE_ID);
 }
 
